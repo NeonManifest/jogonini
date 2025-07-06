@@ -22,11 +22,14 @@ end
 
 function love.update(dt)
     local isMoving = false
+    local isRunning = 1
     -- Update game state here
     if love.keyboard.isDown("x") then
         player.speed = 96
+        isRunning = 2
     else
         player.speed = 64
+        isRunning = 1
     end
     if love.keyboard.isDown("up") then
         player.y = player.y - player.speed * dt
@@ -47,7 +50,7 @@ function love.update(dt)
         isMoving = true
     end
     if isMoving then
-        player.anim:update(dt)
+        player.anim:update(dt * isRunning)
     else
         player.anim:gotoFrame(1)
     end
