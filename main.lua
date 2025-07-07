@@ -1,5 +1,6 @@
 function love.load()
     anim8 = require 'lib/anim8'
+    DialogueManager = require 'dialogue'
     love.graphics.setDefaultFilter("nearest", "nearest")
     -- Initial game state here
     gameCanvas = love.graphics.newCanvas(256, 256)
@@ -18,9 +19,39 @@ function love.load()
     player.animations.up = anim8.newAnimation(player.grid(3, '1-3'), 0.2)
     player.animations.left = anim8.newAnimation(player.grid(2, '1-3'), 0.2):flipH()
     player.anim = player.animations.down
+    -- Set update loop to explore state
+    love.update = updateExplore
 end
 
-function love.update(dt)
+function love.draw()
+    -- Draw everything to our canvas first
+    love.graphics.setCanvas(gameCanvas)
+    love.graphics.clear()
+    
+    -- Draw your game content here
+    player.anim:draw(player.spritesheet, player.x, player.y, nil, 2, 2, 8, 8)
+    
+    -- Draw your game HUD here
+    
+    -- Draw dialogue if active
+    local currentDialogue = dialogueManager:getCurrentDialogue()
+    if currentDialogue then
+        love.graphics.setColor(1, 1, 1)
+        love.graphics.print(currentDialogue, 10, 10)
+    end
+
+    -- Reset canvas and draw the scaled canvas to the screen
+    love.graphics.setCanvas()
+    love.graphics.setColor(1, 1, 1)
+    love.graphics.draw(gameCanvas, 0, 0, 0, gameScale, gameScale)
+end
+
+function love.resize(w, h)
+    local scale = math.min(w / 256, h / 256)
+    gameScale = scale
+end
+
+function updateExplore(dt)
     local isMoving = false
     local isRunning = 1
     -- Update game state here
@@ -56,23 +87,8 @@ function love.update(dt)
     end
 end
 
-function love.draw()
-    -- Draw everything to our canvas first
-    love.graphics.setCanvas(gameCanvas)
-    love.graphics.clear()
-    
-    -- Draw your game content here
-    player.anim:draw(player.spritesheet, player.x, player.y, nil, 2, 2, 8, 8)
-    
-    -- Draw your game HUD here
-    
-    -- Reset canvas and draw the scaled canvas to the screen
-    love.graphics.setCanvas()
-    love.graphics.setColor(1, 1, 1)
-    love.graphics.draw(gameCanvas, 0, 0, 0, gameScale, gameScale)
-end
-
-function love.resize(w, h)
-    local scale = math.min(w / 256, h / 256)
-    gameScale = scale
+function updateDialogue(dt)
+    if love.keyboard.isDown("z") then
+        DialogueManager:advance()
+    end
 end
