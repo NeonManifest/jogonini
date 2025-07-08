@@ -19,6 +19,19 @@ function love.load()
     player.animations.up = anim8.newAnimation(player.grid(3, '1-3'), 0.2)
     player.animations.left = anim8.newAnimation(player.grid(2, '1-3'), 0.2):flipH()
     player.anim = player.animations.down
+    -- Town NPCS
+    townNPCs = {}
+    townNPCs[1] = {}
+    townNPCs[1].spritesheet = love.graphics.newImage("assets/sprite/placeholder.png")
+    townNPCs[1].grid = anim8.newGrid(16, 16, townNPCs[1].spritesheet:getWidth(), townNPCs[1].spritesheet:getHeight())
+    townNPCs[1].animations = {}
+    townNPCs[1].animations.down = anim8.newAnimation(townNPCs[1].grid(4, '1-3'), 0.2)
+    townNPCs[1].animations.right = anim8.newAnimation(townNPCs[1].grid(5, '1-3'), 0.2)
+    townNPCs[1].animations.up= anim8.newAnimation(townNPCs[1].grid(6, '1-3'), 0.2)
+    townNPCs[1].animations.left = anim8.newAnimation(townNPCs[1].grid(5, '1-3'), 0.2):flipH()
+    townNPCs[1].anim = townNPCs[1].animations.down
+    townNPCs[1].x = 96
+    townNPCs[1].y = 96
     -- Set update loop to explore state
     love.update = updateExplore
 end
@@ -29,12 +42,21 @@ function love.draw()
     love.graphics.clear()
     
     -- Draw your game content here
-    player.anim:draw(player.spritesheet, player.x, player.y, nil, 2, 2, 8, 8)
+    local drawables = {}
+    table.insert(drawables, player)
+    for _, npc in ipairs(townNPCs) do
+        table.insert(drawables, npc)
+    end
     
+    table.sort(drawables, function(a, b) return a.y < b.y end)
+    
+    for _, entity in ipairs(drawables) do
+        entity.anim:draw(entity.spritesheet, entity.x, entity.y, nil, 2, 2, 8, 8)
+    end
     -- Draw your game HUD here
     
     -- Draw dialogue if active
-    local currentDialogue = dialogueManager:getCurrentDialogue()
+    local currentDialogue = DialogueManager:getCurrentDialogue()
     if currentDialogue then
         love.graphics.setColor(1, 1, 1)
         love.graphics.print(currentDialogue, 10, 10)

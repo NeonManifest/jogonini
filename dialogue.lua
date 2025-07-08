@@ -32,6 +32,8 @@ function DialogueManager:getCurrentDialogue()
     return nil
 end
 
+return DialogueManager
+
 -- Example code when talking to an NPC
 --     local dialogues = {
 --        "Welcome to the game!",
@@ -41,5 +43,3 @@ end
 --    }
 --    dialogueManager = DialogueManager:new(dialogues)
 --    dialogueManager:start()
-
-return DialogueManager
