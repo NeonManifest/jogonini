@@ -2,6 +2,8 @@ function love.load()
     anim8 = require 'lib/anim8'
     DialogueManager = require 'dialogue'
     love.graphics.setDefaultFilter("nearest", "nearest")
+    -- Configure sound
+    sound = love.audio.newSource("assets/sound/coin10.wav", "static")
     -- Initial game state here
     gameCanvas = love.graphics.newCanvas(256, 256)
     local scale = 2
@@ -33,7 +35,7 @@ function love.load()
     townNPCs[1].anim = townNPCs[1].animations.down
     townNPCs[1].x = 96
     townNPCs[1].y = 96
-    townNPCs[1].dialogue = {"Good evening!", "Welcome to the game!"}
+    townNPCs[1].dialogue = {"Good evening! Bask in the pale moonlight! Remember the times long gone when things were brighter. Remember your sweetest dreams.", "Welcome to the game!"}
     -- Set update loop to explore state
     love.update = updateExplore
     dialogueManager = DialogueManager:new()
@@ -61,8 +63,43 @@ function love.draw()
     -- Draw dialogue if active
     local currentDialogue = dialogueManager:getCurrentDialogue()
     if currentDialogue then
+        -- Dialogue box size
+        local boxX, boxY = 4, 4
+        local boxW, boxH = 248, 68
+        -- Player sprite size
+        local playerW, playerH = 32, 32
+        -- Default: show at bottom
+        boxY = 256 - boxH - 4
+        -- Check if box would cover player
+        local playerBottom = player.y + playerH / 2
+        if playerBottom + 4 > boxY then
+            -- Show at top if covered
+            boxY = 4
+        end
+        love.graphics.setColor(0, 0, 0)
+        love.graphics.rectangle("fill", boxX, boxY, boxW, boxH)
         love.graphics.setColor(1, 1, 1)
-        love.graphics.print(currentDialogue, 10, 10)
+        love.graphics.rectangle("line", boxX, boxY, boxW, boxH)
+        love.graphics.setColor(1, 1, 1)
+        local substring = string.sub(currentDialogue, 1, dialogueManager.currentSubstringIndex)
+        -- Simple word wrap
+        local function wrap(text, maxW)
+            local t, l = {}, ""
+            for w in text:gmatch("%S+") do
+            local test = l == "" and w or (l .. " " .. w)
+            if love.graphics.getFont():getWidth(test) > maxW then
+                table.insert(t, l)
+                l = w
+            else
+                l = test
+            end
+            end
+            if l ~= "" then table.insert(t, l) end
+            return t
+        end
+        for i, l in ipairs(wrap(substring, boxW - 12)) do
+            love.graphics.print(l, boxX + 6, boxY + 6 + (i - 1) * love.graphics.getFont():getHeight())
+        end
     end
 
     -- Reset canvas and draw the scaled canvas to the screen
@@ -119,7 +156,12 @@ end
 function love.keypressed(key)
     if key == "z" then
         if love.update == updateDialogue then
-            dialogueManager:advance()
+            local currentText = dialogueManager.dialogues[dialogueManager.currentDialogueIndex]
+            if dialogueManager.currentSubstringIndex < #currentText then
+                dialogueManager.currentSubstringIndex = #currentText
+            else
+                dialogueManager:advance()
+            end
         elseif love.update == updateExplore then
             for _, npc in ipairs(townNPCs) do
                 if (distance(npc.x,npc.y,player.interact[1],player.interact[2]) <= 10) then
@@ -153,6 +195,23 @@ end
 function updateDialogue(dt)
     if not dialogueManager.isActive then
         love.update = updateExplore
+    else
+        if love.keyboard.isDown("x") then
+            local currentText = dialogueManager.dialogues[dialogueManager.currentDialogueIndex]
+            if dialogueManager.currentSubstringIndex < #currentText then
+                dialogueManager.currentSubstringIndex = #currentText
+            end
+        end
+        -- Show next character every 0.15s
+        dialogueManager._substringTimer = (dialogueManager._substringTimer or 0) + dt
+        local currentText = dialogueManager.dialogues[dialogueManager.currentDialogueIndex]
+        if dialogueManager.currentSubstringIndex <= #currentText then
+            if dialogueManager._substringTimer >= 0.025 then
+                dialogueManager.currentSubstringIndex = dialogueManager.currentSubstringIndex + 1
+                dialogueManager._substringTimer = 0
+                sound:play()
+            end
+        end
     end
 end
 

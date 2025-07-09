@@ -4,7 +4,9 @@ function DialogueManager:new(dialogues)
     local obj = {
         dialogues = dialogues or {},
         currentDialogueIndex = 1,
-        isActive = false
+        currentSubstringIndex = 1,
+        isActive = false,
+        _substringtimer = 0
     }
     setmetatable(obj, self)
     self.__index = self
@@ -14,11 +16,13 @@ end
 function DialogueManager:start()
     self.isActive = true
     self.currentDialogueIndex = 1
+    self.currentSubstringIndex = 1
 end
 
 function DialogueManager:advance()
     if self.isActive then
         self.currentDialogueIndex = self.currentDialogueIndex + 1
+        self.currentSubstringIndex = 1
         if self.currentDialogueIndex > #self.dialogues then
             self.isActive = false
         end
