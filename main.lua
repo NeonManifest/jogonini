@@ -19,6 +19,7 @@ function love.load()
     player.animations.up = anim8.newAnimation(player.grid(3, '1-3'), 0.2)
     player.animations.left = anim8.newAnimation(player.grid(2, '1-3'), 0.2):flipH()
     player.anim = player.animations.down
+    player.interact = {player.x-2, player.y + 16}
     -- Town NPCS
     townNPCs = {}
     townNPCs[1] = {}
@@ -32,8 +33,10 @@ function love.load()
     townNPCs[1].anim = townNPCs[1].animations.down
     townNPCs[1].x = 96
     townNPCs[1].y = 96
+    townNPCs[1].dialogue = {"Good evening!", "Welcome to the game!"}
     -- Set update loop to explore state
     love.update = updateExplore
+    dialogueManager = DialogueManager:new()
 end
 
 function love.draw()
@@ -56,7 +59,7 @@ function love.draw()
     -- Draw your game HUD here
     
     -- Draw dialogue if active
-    local currentDialogue = DialogueManager:getCurrentDialogue()
+    local currentDialogue = dialogueManager:getCurrentDialogue()
     if currentDialogue then
         love.graphics.setColor(1, 1, 1)
         love.graphics.print(currentDialogue, 10, 10)
@@ -87,19 +90,23 @@ function updateExplore(dt)
     if love.keyboard.isDown("up") then
         player.y = player.y - player.speed * dt
         player.anim = player.animations.up
+        player.interact = {player.x-2, player.y - 16}
         isMoving = true
     elseif love.keyboard.isDown("down") then
         player.y = player.y + player.speed * dt
         player.anim = player.animations.down
+        player.interact = {player.x-2, player.y + 16}
         isMoving = true
     end
     if love.keyboard.isDown("left") then
         player.x = player.x - player.speed * dt
         player.anim = player.animations.left
+        player.interact = {player.x - 16, player.y}
         isMoving = true
     elseif love.keyboard.isDown("right") then
         player.x = player.x + player.speed * dt
         player.anim = player.animations.right
+        player.interact = {player.x + 16, player.y}
         isMoving = true
     end
     if isMoving then
@@ -109,8 +116,46 @@ function updateExplore(dt)
     end
 end
 
-function updateDialogue(dt)
-    if love.keyboard.isDown("z") then
-        DialogueManager:advance()
+function love.keypressed(key)
+    if key == "z" then
+        if love.update == updateDialogue then
+            dialogueManager:advance()
+        elseif love.update == updateExplore then
+            for _, npc in ipairs(townNPCs) do
+                if (distance(npc.x,npc.y,player.interact[1],player.interact[2]) <= 10) then
+                    -- Turn the NPC to the right direction
+                    local dx = player.x - npc.x
+                    local dy = player.y - npc.y
+                    if math.abs(dx) > math.abs(dy) then
+                        if dx > 0 then
+                            npc.anim = npc.animations.right
+                        else
+                            npc.anim = npc.animations.left
+                        end
+                    else
+                        if dy > 0 then
+                            npc.anim = npc.animations.down
+                        else
+                            npc.anim = npc.animations.up
+                        end
+                    end
+                    -- Start the dialogue
+                    dialogueManager = DialogueManager:new(npc.dialogue)
+                    dialogueManager:start()
+                    love.update = updateDialogue
+                end
+                break
+            end
+        end
     end
+end
+
+function updateDialogue(dt)
+    if not dialogueManager.isActive then
+        love.update = updateExplore
+    end
+end
+
+function distance(x1, y1, x2, y2)
+  return math.sqrt((x2 - x1)^2 + (y2 - y1)^2)
 end
